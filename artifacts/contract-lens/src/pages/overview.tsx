@@ -1,0 +1,40 @@
+import { Activity, ArrowUpRight, BarChart3, BellRing, CheckCircle2, Clock3, Server, Siren, Zap } from "lucide-react";
+import { useGetDashboard } from "@workspace/api-client-react";
+import { AppShell, Button, ErrorState, MetricCard, PageHeader, ServiceMark, Skeleton, Sparkline, StatusBadge, formatRelative } from "@/components/contract-ui";
+import { Link } from "wouter";
+
+export default function OverviewPage() {
+  const dashboard = useGetDashboard();
+  if (dashboard.isLoading) return <AppShell><PageHeader eyebrow="Reliability overview" title="Good morning, Sushant." detail="Loading the latest signal from your production workspace." /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((item) => <Skeleton key={item} className="h-[130px]" />)}</div><div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_.75fr]"><Skeleton className="h-[315px]" /><Skeleton className="h-[315px]" /></div></AppShell>;
+  if (dashboard.isError || !dashboard.data) return <AppShell><PageHeader eyebrow="Reliability overview" title="Good morning, Sushant." /><ErrorState message="Dashboard signal is unavailable." retry={() => dashboard.refetch()} /></AppShell>;
+  const data = dashboard.data;
+  return <AppShell>
+    <PageHeader eyebrow="Reliability overview" title="Good morning, Sushant." detail={`A clear read on ${data.workspaceName || "your production workspace"} — last refreshed just now.`} action={<Button variant="secondary" testId="button-refresh-dashboard" onClick={() => dashboard.refetch()}><Activity size={14} /> Refresh signal</Button>} />
+    <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <MetricCard label="30d uptime" value={`${data.summary.uptime.toFixed(2)}%`} detail="Across monitored services" icon={CheckCircle2} tone="green" />
+      <MetricCard label="Avg. latency" value={`${Math.round(data.summary.averageLatency)}ms`} detail="p50 across all checks" icon={Zap} tone="blue" />
+      <MetricCard label="Open incidents" value={String(data.summary.openIncidents)} detail={data.summary.openIncidents ? "Needs a closer look" : "Nothing needs attention"} icon={Siren} tone={data.summary.openIncidents ? "amber" : "green"} />
+      <MetricCard label="Monitored checks" value={String(data.summary.monitoredChecks)} detail="Running in production" icon={BarChart3} tone="green" />
+    </div>
+    <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
+      <section className="overflow-hidden rounded-lg border border-card-border bg-card shadow-xs animate-rise-in" data-testid="section-service-health">
+        <div className="flex items-start justify-between border-b border-border px-5 py-4"><div><h2 className="text-[14px] font-extrabold">Service health</h2><p className="mt-1 text-[11px] text-muted-foreground">Current status across your critical surface</p></div><Link href="/services" className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline" data-testid="link-view-services">View catalog <ArrowUpRight size={13} /></Link></div>
+        <div className="divide-y divide-border">
+          {data.services?.length ? data.services.map((service) => <Link href={`/services?service=${service.id}`} key={service.id} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-muted/60" data-testid={`row-service-${service.id}`}><ServiceMark name={service.name} /><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">{service.name}</p><p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">{service.endpointCount} endpoints · {service.owner}</p></div><div className="hidden items-center gap-5 sm:flex"><div className="text-right"><p className="font-mono text-[11px] font-medium">{service.latency}ms</p><p className="text-[10px] text-muted-foreground">latency</p></div><div className="text-right"><p className="font-mono text-[11px] font-medium">{service.uptime.toFixed(2)}%</p><p className="text-[10px] text-muted-foreground">uptime</p></div></div><StatusBadge status={service.status} /></Link>) : <div className="p-5"><p className="text-sm font-bold">No services monitored yet.</p><p className="mt-1 text-xs text-muted-foreground">Register your first service to start collecting reliability signal.</p></div>}
+        </div>
+      </section>
+      <section className="rounded-lg border border-card-border bg-card p-5 shadow-xs animate-rise-in" style={{ animationDelay: "80ms" }} data-testid="section-latency-trend">
+        <div className="mb-5 flex items-start justify-between"><div><h2 className="text-[14px] font-extrabold">Latency trend</h2><p className="mt-1 text-[11px] text-muted-foreground">Last 24 hours · milliseconds</p></div><span className="rounded-md bg-accent px-2 py-1 font-mono text-[10px] text-primary">p50</span></div>
+        <Sparkline points={data.latencyTrend} color="#22966d" />
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border pt-4"><div><p className="font-mono text-[10px] text-muted-foreground">CURRENT</p><p className="mt-1 text-lg font-extrabold">{Math.round(data.summary.averageLatency)}<span className="ml-1 text-xs font-medium text-muted-foreground">ms</span></p></div><div><p className="font-mono text-[10px] text-muted-foreground">ERROR RATE</p><p className="mt-1 text-lg font-extrabold">{data.errorTrend?.at(-1)?.value?.toFixed(2) || "0.00"}<span className="ml-1 text-xs font-medium text-muted-foreground">%</span></p></div></div>
+      </section>
+    </div>
+    <div className="mt-6 grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
+      <section className="rounded-lg border border-card-border bg-card shadow-xs" data-testid="section-open-incidents">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="text-[14px] font-extrabold">Open incidents</h2><p className="mt-1 text-[11px] text-muted-foreground">Active reliability events</p></div><Link href="/incidents" className="text-[11px] font-bold text-primary hover:underline" data-testid="link-view-incidents">View all</Link></div>
+        {data.incidents?.filter((incident) => incident.status !== "resolved").length ? <div className="divide-y divide-border">{data.incidents.filter((incident) => incident.status !== "resolved").slice(0, 4).map((incident) => <Link href={`/incidents/${incident.id}`} key={incident.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/60" data-testid={`row-incident-${incident.id}`}><div className="h-2 w-2 rounded-full bg-[#d7584d]" /><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">{incident.title}</p><p className="mt-1 text-[10px] text-muted-foreground">{incident.serviceName} · {formatRelative(incident.updatedAt)}</p></div><StatusBadge status={incident.severity} kind="incident" /></Link>)}</div> : <div className="p-7 text-center"><CheckCircle2 className="mx-auto text-primary" size={22} /><p className="mt-3 text-sm font-bold">No active incidents</p><p className="mt-1 text-xs text-muted-foreground">Your on-call queue is quiet.</p></div>}
+      </section>
+      <section className="rounded-lg border border-card-border bg-card shadow-xs" data-testid="section-activity"><div className="border-b border-border px-5 py-4"><h2 className="text-[14px] font-extrabold">Latest activity</h2><p className="mt-1 text-[11px] text-muted-foreground">A running log of changes and signal</p></div><div className="divide-y divide-border">{data.activity?.slice(0, 5).map((event) => <div key={event.id} className="flex gap-3 px-5 py-3.5"><div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">{event.kind === "alert" ? <BellRing size={14} /> : event.kind === "recovery" ? <CheckCircle2 size={14} /> : <Clock3 size={14} />}</div><div className="min-w-0 flex-1"><p className="text-[12px] font-bold">{event.title}</p><p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">{event.detail}</p></div><span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">{formatRelative(event.occurredAt)}</span></div>)}</div></section>
+    </div>
+  </AppShell>;
+}

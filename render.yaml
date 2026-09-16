@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: contract-lens-api
+    runtime: node
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
+    startCommand: pnpm --filter @workspace/api-server run start
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: DATABASE_URL
+        fromDatabase:
+          name: contract-lens-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: web
+    name: contract-lens-web
+    runtime: static
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && BASE_PATH=/ pnpm --filter @workspace/contract-lens run build
+    staticPublishPath: artifacts/contract-lens/dist/public
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  - name: contract-lens-db
+    plan: basic-256mb

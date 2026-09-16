@@ -1,0 +1,518 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: ContractLens API reliability and contract intelligence API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: dashboard
+    description: Workspace overview and reliability metrics
+  - name: services
+    description: Monitored services
+  - name: checks
+    description: Synthetic API checks
+  - name: incidents
+    description: API reliability incidents
+  - name: ai
+    description: AI-assisted diagnosis
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get reliability dashboard
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List monitored services
+      responses:
+        "200":
+          description: Services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Register a service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Created service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+  /services/{serviceId}:
+    get:
+      operationId: getService
+      tags: [services]
+      summary: Get service details
+      parameters:
+        - $ref: "#/components/parameters/ServiceId"
+      responses:
+        "200":
+          description: Service details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Update a service
+      parameters:
+        - $ref: "#/components/parameters/ServiceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Updated service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /checks:
+    get:
+      operationId: listChecks
+      tags: [checks]
+      summary: List API checks
+      parameters:
+        - name: serviceId
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: API checks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiCheck"
+    post:
+      operationId: createCheck
+      tags: [checks]
+      summary: Create an API check
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInput"
+      responses:
+        "201":
+          description: Created check
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiCheck"
+  /checks/{checkId}:
+    get:
+      operationId: getCheck
+      tags: [checks]
+      summary: Get check details and recent runs
+      parameters:
+        - $ref: "#/components/parameters/CheckId"
+      responses:
+        "200":
+          description: API check
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: runCheck
+      tags: [checks]
+      summary: Run a check immediately
+      parameters:
+        - $ref: "#/components/parameters/CheckId"
+      responses:
+        "200":
+          description: Check run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckRun"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /incidents:
+    get:
+      operationId: listIncidents
+      tags: [incidents]
+      summary: List recent incidents
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, investigating, resolved]
+      responses:
+        "200":
+          description: Incidents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Incident"
+    post:
+      operationId: createIncident
+      tags: [incidents]
+      summary: Create an incident from a detected failure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentInput"
+      responses:
+        "201":
+          description: Created incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+  /incidents/{incidentId}:
+    get:
+      operationId: getIncident
+      tags: [incidents]
+      summary: Get incident details
+      parameters:
+        - $ref: "#/components/parameters/IncidentId"
+      responses:
+        "200":
+          description: Incident detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateIncident
+      tags: [incidents]
+      summary: Update incident status
+      parameters:
+        - $ref: "#/components/parameters/IncidentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentUpdate"
+      responses:
+        "200":
+          description: Updated incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+  /incidents/{incidentId}/diagnose:
+    post:
+      operationId: diagnoseIncident
+      tags: [ai]
+      summary: Generate an evidence-backed incident diagnosis
+      parameters:
+        - $ref: "#/components/parameters/IncidentId"
+      responses:
+        "200":
+          description: AI diagnosis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Diagnosis"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    ServiceId:
+      name: serviceId
+      in: path
+      required: true
+      schema:
+        type: number
+    CheckId:
+      name: checkId
+      in: path
+      required: true
+      schema:
+        type: number
+    IncidentId:
+      name: incidentId
+      in: path
+      required: true
+      schema:
+        type: number
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    Service:
+      type: object
+      required: [id, name, slug, owner, status, uptime, latency, endpointCount, updatedAt]
+      properties:
+        id: { type: number }
+        name: { type: string }
+        slug: { type: string }
+        owner: { type: string }
+        description: { type: string }
+        status:
+          type: string
+          enum: [healthy, degraded, down]
+        uptime: { type: number }
+        latency: { type: number }
+        endpointCount: { type: number }
+        updatedAt: { type: string, format: date-time }
+    ServiceInput:
+      type: object
+      required: [name, owner]
+      properties:
+        name: { type: string, minLength: 1 }
+        owner: { type: string, minLength: 1 }
+        description: { type: string }
+    ServiceUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        owner: { type: string, minLength: 1 }
+        description: { type: string }
+        status:
+          type: string
+          enum: [healthy, degraded, down]
+    ApiCheck:
+      type: object
+      required: [id, serviceId, serviceName, name, method, path, url, status, latency, lastRunAt, successRate]
+      properties:
+        id: { type: number }
+        serviceId: { type: number }
+        serviceName: { type: string }
+        name: { type: string }
+        method:
+          type: string
+          enum: [GET, POST, PUT, PATCH, DELETE]
+        path: { type: string }
+        url: { type: string }
+        status:
+          type: string
+          enum: [passing, failing, paused]
+        latency: { type: number }
+        successRate: { type: number }
+        lastRunAt: { type: string, format: date-time }
+    CheckInput:
+      type: object
+      required: [serviceId, name, method, path, url]
+      properties:
+        serviceId: { type: number }
+        name: { type: string, minLength: 1 }
+        method:
+          type: string
+          enum: [GET, POST, PUT, PATCH, DELETE]
+        path: { type: string }
+        url: { type: string }
+    CheckRun:
+      type: object
+      required: [id, checkId, status, statusCode, latency, ranAt]
+      properties:
+        id: { type: number }
+        checkId: { type: number }
+        status:
+          type: string
+          enum: [passed, failed]
+        statusCode: { type: number }
+        latency: { type: number }
+        error: { type: ["string", "null"] }
+        ranAt: { type: string, format: date-time }
+    CheckDetail:
+      allOf:
+        - $ref: "#/components/schemas/ApiCheck"
+        - type: object
+          required: [recentRuns]
+          properties:
+            recentRuns:
+              type: array
+              items:
+                $ref: "#/components/schemas/CheckRun"
+    Incident:
+      type: object
+      required: [id, title, serviceName, severity, status, startedAt, duration, errorRate, updatedAt]
+      properties:
+        id: { type: number }
+        title: { type: string }
+        serviceName: { type: string }
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [open, investigating, resolved]
+        startedAt: { type: string, format: date-time }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+        duration: { type: string }
+        errorRate: { type: number }
+        updatedAt: { type: string, format: date-time }
+    IncidentInput:
+      type: object
+      required: [title, serviceName, severity]
+      properties:
+        title: { type: string, minLength: 1 }
+        serviceName: { type: string, minLength: 1 }
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        errorRate: { type: number }
+    IncidentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, investigating, resolved]
+    TimelineEvent:
+      type: object
+      required: [id, kind, title, detail, occurredAt]
+      properties:
+        id: { type: number }
+        kind:
+          type: string
+          enum: [alert, deployment, diagnosis, update, recovery]
+        title: { type: string }
+        detail: { type: string }
+        occurredAt: { type: string, format: date-time }
+    IncidentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Incident"
+        - type: object
+          required: [timeline, affectedChecks]
+          properties:
+            timeline:
+              type: array
+              items:
+                $ref: "#/components/schemas/TimelineEvent"
+            affectedChecks:
+              type: array
+              items:
+                $ref: "#/components/schemas/ApiCheck"
+    Evidence:
+      type: object
+      required: [label, detail, source]
+      properties:
+        label: { type: string }
+        detail: { type: string }
+        source: { type: string }
+    Diagnosis:
+      type: object
+      required: [summary, confidence, probableCause, recommendations, evidence, generatedAt]
+      properties:
+        summary: { type: string }
+        confidence: { type: number }
+        probableCause: { type: string }
+        recommendations:
+          type: array
+          items: { type: string }
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/Evidence"
+        generatedAt: { type: string, format: date-time }
+    MetricPoint:
+      type: object
+      required: [label, value]
+      properties:
+        label: { type: string }
+        value: { type: number }
+    Dashboard:
+      type: object
+      required: [workspaceName, summary, services, incidents, latencyTrend, errorTrend, activity]
+      properties:
+        workspaceName: { type: string }
+        summary:
+          type: object
+          required: [uptime, averageLatency, openIncidents, monitoredChecks]
+          properties:
+            uptime: { type: number }
+            averageLatency: { type: number }
+            openIncidents: { type: number }
+            monitoredChecks: { type: number }
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        incidents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Incident"
+        latencyTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricPoint"
+        errorTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricPoint"
+        activity:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineEvent"
+
