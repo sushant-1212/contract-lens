@@ -1,1 +1,0 @@
-- [GitHub publishing](github-publish.md) — empty repositories need a bootstrap Contents commit before Git Data API tree uploads.
