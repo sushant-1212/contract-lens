@@ -1,139 +1,179 @@
 # ContractLens
 
-> API reliability and contract intelligence for engineering teams.
+<p align="center">
+  <strong>API Reliability & Contract Intelligence for Engineering Teams</strong><br />
+  Detect silent schema drift, track service health, and diagnose incidents with evidence-backed AI before consumers break.
+</p>
 
-ContractLens helps teams detect API contract drift, understand service health,
-and investigate incidents from one focused workspace. It brings monitoring
-signal, contract-aware checks, incident timelines, and evidence-backed AI
-diagnosis together in a single product.
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-20+-green.svg" alt="Node.js 20+" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white" alt="Express 5" />
+  <img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Drizzle_ORM-PostgreSQL-C5F74F?logo=postgresql&logoColor=black" alt="Drizzle ORM" />
+  <img src="https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white" alt="OpenAPI 3.1" />
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" />
+</p>
+
+---
 
 ## Why ContractLens
 
-Traditional uptime monitoring can tell you that an endpoint is responding. It
-often cannot tell you that a response quietly changed and broke a consumer.
-ContractLens focuses on that gap.
+Traditional uptime monitoring answers a simple binary question: *Is the endpoint responding with HTTP 200?*
 
-For example, a payment endpoint may continue returning HTTP 200 after a
-deployment while dropping a required `currency` field. ContractLens captures
-the failed check, connects it to the incident timeline, and helps explain the
-likely cause.
+It **fails silently** when:
+- A deployment drops a required field (`currency`, `order_id`) while still returning `200 OK`.
+- Upstream type alterations cause downstream microservices or mobile clients to crash.
+- Schema regressions go undetected until customer tickets flood support queues.
 
-## Core capabilities
+**ContractLens** bridges this gap. It continuously monitors live endpoints, validates HTTP payloads against contract schemas, correlates anomalies with deployment events, and produces automated, evidence-backed SRE root-cause diagnoses.
 
-- **Reliability overview** — uptime, latency, error rate, service health, and
-  active incident signal
-- **Service catalog** — ownership, endpoint coverage, health status, and
-  performance context
-- **API checks** — HTTP method, endpoint, status, latency, success rate, and
-  recent run history
-- **Incident management** — severity, status, error rate, duration, timelines,
-  resolution, and affected checks
-- **AI diagnosis** — probable cause, confidence, recommendations, and the
-  evidence supporting each diagnosis
-- **Contract-first API** — OpenAPI is the source of truth for generated client
-  hooks, request schemas, response schemas, and TypeScript types
+---
 
-## How it works
+## Architecture & Data Flow
 
-```text
-API check
-   ↓
-Check run and response evidence
-   ↓
-Incident timeline
-   ↓
-AI-assisted diagnosis
-   ↓
-Recommended action
+```mermaid
+flowchart TD
+    subgraph Client [User Interface]
+        UI[React 19 + Tailwind CSS + TanStack Query]
+    end
+
+    subgraph Server [Backend Engine - Express 5]
+        API[Express API Router]
+        PROBE[Synthetic HTTP Probe Runner]
+        SRE[AI & Heuristic SRE Diagnosis Engine]
+        STATIC[Unified Production SPA Handler]
+    end
+
+    subgraph Data [Data Layer]
+        PG[(PostgreSQL + Drizzle ORM)]
+    end
+
+    subgraph External [External Target APIs & LLMs]
+        TARGET[Live Microservices / Target Endpoints]
+        LLM[OpenAI / Groq LLM Provider]
+    end
+
+    UI -->|REST + Generated Client| API
+    API --> STATIC
+    API --> PROBE
+    API --> SRE
+    API <-->|Schema Validation & Queries| PG
+    PROBE -->|Real HTTP Probe + Latency Timer| TARGET
+    SRE -->|Structured Telemetry Analysis| LLM
+    SRE -.->|Deterministic Heuristic Fallback| SRE
 ```
 
-The frontend communicates with an Express API. The API persists services,
-checks, check runs, incidents, and timeline events in PostgreSQL. When an
-engineer requests a diagnosis, the API sends the incident evidence to an
-OpenAI-compatible model and validates the structured response before returning
-it to the interface.
+---
 
-## Technology
+## Key Capabilities
 
-- React, TypeScript, Vite, and Tailwind CSS
-- Express 5
-- PostgreSQL and Drizzle ORM
-- Zod and drizzle-zod validation
-- OpenAPI 3.1 and Orval-generated client code
-- React Query for server state and cache invalidation
-- OpenAI SDK for structured incident diagnosis
-- pnpm workspace monorepo
+- **Reliability Overview** — Global uptime, p50 latency sparklines, error rates, service health status, and active incident signal.
+- **Service Catalog** — Ownership, endpoint coverage, health status, and performance SLAs across services.
+- **API Checks** — HTTP method, endpoint, status, real network latency measurement, success rate, and historical run tracking.
+- **Incident Management** — Severity, status, error rates, duration, timeline events, and correlated failing checks.
+- **AI & Deterministic SRE Diagnosis** — Probable cause, confidence scoring, actionable recommendations, and telemetry evidence (with automatic heuristic fallback when no LLM API key is present).
+- **Contract-First API** — OpenAPI 3.1 is the single source of truth for generated client hooks, request/response Zod schemas, and TypeScript interfaces.
+- **Single-Service Production Deployment** — Express 5 serves both the compiled Vite React 19 SPA and API routes with zero CORS overhead and complete SPA client-side routing fallback.
 
-## Run locally
+## Technology Stack
 
-### Prerequisites
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Radix UI primitives
+- **Backend API**: Express 5, Pino Logger, OpenAPI 3.1
+- **Database & ORM**: PostgreSQL with SSL Connection Pooling, Drizzle ORM, `drizzle-zod`
+- **Contract Code-Gen**: OpenAPI 3.1, Orval, Zod
+- **Server State**: TanStack React Query v5
+- **Diagnostics**: OpenAI SDK (GPT-4o / GPT-5-mini / Groq) + Fallback SRE Heuristic Engine
+- **DevOps & Testing**: Multi-stage Docker, Docker Compose, GitHub Actions CI, Node.js Test Runner
 
-- Node.js 24+
-- pnpm
-- PostgreSQL
+---
 
-### Setup
+## Getting Started
+
+### Local Development
+
+#### Prerequisites
+- Node.js 20+
+- pnpm (`npm install -g pnpm`)
+- PostgreSQL database
+
+#### Setup
 
 ```bash
+# 1. Install dependencies
 pnpm install
-export DATABASE_URL="postgresql://..."
-pnpm --filter @workspace/db run push
+
+# 2. Configure environment variables (see .env.example)
+cp .env.example .env
+
+# 3. Push database schema
+pnpm db:push
+
+# 4. Start development servers
+pnpm dev             # Starts backend API (port 5000)
+pnpm dev:frontend    # Starts frontend with HMR (port 5173)
 ```
 
-Start the API:
+The web dashboard is available at `http://localhost:5173` with automatic API reverse-proxying to `http://localhost:5000`.
+
+### Docker Compose
+
+Run ContractLens alongside a PostgreSQL instance:
 
 ```bash
-PORT=5000 pnpm --filter @workspace/api-server run dev
+docker compose up --build
 ```
 
-In a second terminal, start the frontend:
+The application will be accessible at `http://localhost:5000`.
 
-```bash
-PORT=5173 BASE_PATH=/ pnpm --filter @workspace/contract-lens run dev
-```
+---
 
-The API is available at `http://localhost:5000/api` and the frontend at
-`http://localhost:5173`.
+## Available Scripts
 
-To enable AI diagnosis, provide `OPENAI_API_KEY` through your environment.
-Never commit credentials to the repository.
+| Script | Purpose |
+|---|---|
+| `pnpm dev` | Start backend API server with live watch mode |
+| `pnpm dev:frontend` | Start Vite React dev server with Hot Module Replacement |
+| `pnpm build` | Typecheck and build libraries, frontend, and server bundles |
+| `pnpm start` | Run compiled production bundle |
+| `pnpm test` | Run automated test suites |
+| `pnpm typecheck` | Run strict TypeScript compiler verification across workspace |
+| `pnpm db:push` | Push Drizzle ORM schema migrations to PostgreSQL |
 
-## Development commands
+---
 
-```bash
-pnpm run typecheck
-pnpm run build
-pnpm --filter @workspace/api-spec run codegen
-pnpm --filter @workspace/db run push
-```
+## API Reference
 
-## Project structure
+The contract lives in `lib/api-spec/openapi.yaml`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/healthz` | Container and load-balancer health probe |
+| `GET` | `/api/dashboard` | Workspace reliability overview, uptime, and 24h trends |
+| `GET` | `/api/services` | Service catalog, owners, and SLA metrics |
+| `POST` | `/api/services` | Register a new monitored service |
+| `GET` | `/api/checks` | List configured synthetic contract checks |
+| `POST` | `/api/checks/:checkId` | Trigger an immediate live contract check execution |
+| `GET` | `/api/incidents` | List active and resolved reliability incidents |
+| `GET` | `/api/incidents/:id` | Get incident details, timeline events, and affected checks |
+| `PATCH` | `/api/incidents/:id` | Update incident status or resolution details |
+| `POST` | `/api/incidents/:id/diagnose` | Run AI / SRE heuristic root-cause diagnosis |
+
+---
+
+## Project Structure
 
 | Path | Responsibility |
-| --- | --- |
-| `artifacts/contract-lens` | React/Vite product interface |
-| `artifacts/api-server` | Express API and diagnosis workflow |
-| `lib/api-spec` | OpenAPI source contract |
-| `lib/api-client-react` | Generated React Query client |
-| `lib/api-zod` | Generated request and response schemas |
-| `lib/db` | PostgreSQL connection and Drizzle schema |
+|---|---|
+| `artifacts/contract-lens` | React 19 / Vite product interface |
+| `artifacts/api-server` | Express 5 API, probe runner, and SRE diagnosis workflow |
+| `lib/api-spec` | OpenAPI 3.1 source contract |
+| `lib/api-client-react` | Generated React Query client hooks |
+| `lib/api-zod` | Generated request and response validation schemas |
+| `lib/db` | PostgreSQL connection pool and Drizzle schema |
 
-## API
+---
 
-The API contract lives in `lib/api-spec/openapi.yaml`.
+## License
 
-Primary resources include:
-
-- `/api/dashboard`
-- `/api/services`
-- `/api/checks`
-- `/api/incidents`
-- `/api/incidents/:incidentId/diagnose`
-
-## Project status
-
-ContractLens is a functional full-stack MVP. It includes persistent service,
-check, run, and incident workflows alongside an evidence-backed AI diagnosis
-flow. A production monitoring expansion would add scheduled endpoint
-execution, automatic alert creation, notification integrations, and
-team-level access control.
+MIT © 2026 Sushant
