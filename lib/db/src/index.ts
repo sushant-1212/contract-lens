@@ -14,6 +14,10 @@ export const pool = new Pool({
   ssl: isCloudOrProd ? { rejectUnauthorized: false } : false,
 });
 
+pool.on("error", (err) => {
+  console.warn("[ContractLens DB] Unexpected pool client error:", err.message);
+});
+
 if (!connectionString) {
   console.warn(
     "[ContractLens DB] Warning: DATABASE_URL is not set. Falling back to default local connection. Make sure PostgreSQL is running or set DATABASE_URL in your environment.",

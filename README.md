@@ -116,6 +116,18 @@ pnpm dev:frontend    # Starts frontend with HMR (port 5173)
 
 The web dashboard is available at `http://localhost:5173` with automatic API reverse-proxying to `http://localhost:5000`.
 
+### Environment Configuration
+
+| Variable | Required | Default / Fallback | Description |
+|---|---|---|---|
+| `DATABASE_URL` | No | In-memory store | PostgreSQL connection string. Auto-provisions tables on boot. If omitted or unreachable, operates via high-availability in-memory resilience store. |
+| `GROK_API_KEY` / `XAI_API_KEY` | No | SRE Rule Engine | xAI Grok API key (`xai-...`) using `grok-2-latest` for automated incident root-cause diagnosis. |
+| `GROQ_API_KEY` | No | SRE Rule Engine | Groq API key (`gsk_...`) using `llama-3.3-70b-versatile` for sub-second diagnosis. |
+| `OPENAI_API_KEY` | No | SRE Rule Engine | OpenAI API key (`sk-...`) using `gpt-4o-mini`. |
+| `PORT` | No | `5000` | HTTP server listening port. |
+
+> **Note:** If no AI key is provided or remote API connectivity fails, ContractLens automatically runs its deterministic SRE heuristic rule engine. The application never fails or produces 500 errors due to missing external keys.
+
 ### Docker Compose
 
 Run ContractLens alongside a PostgreSQL instance:
