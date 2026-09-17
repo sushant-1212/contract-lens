@@ -4,13 +4,22 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+const connectionString = process.env.DATABASE_URL;
+const isCloudOrProd =
+  process.env.NODE_ENV === "production" ||
+  (connectionString && !connectionString.includes("localhost") && !connectionString.includes("127.0.0.1"));
+
+export const pool = new Pool({
+  connectionString: connectionString || "postgresql://postgres:postgres@localhost:5432/contract_lens",
+  ssl: isCloudOrProd ? { rejectUnauthorized: false } : false,
+});
+
+if (!connectionString) {
+  console.warn(
+    "[ContractLens DB] Warning: DATABASE_URL is not set. Falling back to default local connection. Make sure PostgreSQL is running or set DATABASE_URL in your environment.",
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
